@@ -5,7 +5,7 @@ compatibility_date = "2025-01-01"
 # 允许调用代理的网页来源。调试阶段用 *，上线后改成你的域名，如
 # ALLOWED_ORIGINS = "https://xeniahan2000.github.io,https://your.domain"
 [vars]
-ALLOWED_ORIGINS = "*"
+ALLOWED_ORIGINS = "https://xeniahan2000.github.io"
 
 # eBird API key 不要写在这里，用密钥注入：
 #   wrangler secret put EBIRD_KEY
