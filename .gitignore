@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+node_modules/
+.wrangler/
+proxy/.dev.vars
+*.log
+.env
+proxy/.env
+local-data/
+*.local.csv
+*.local.json
+test-results/
+.cache/

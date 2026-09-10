@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="让我观观">
+<meta name="description" content="按地区查看鸟点与鸟种，数据来自 eBird">
+<title>让我观观 · 各地鸟点与鸟种</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css?v=0.3.0">
+<link rel="modulepreload" href="js/app.js?v=0.3.0">
+<link rel="modulepreload" href="js/data.js?v=0.3.0">
+<link rel="modulepreload" href="js/ui.js?v=0.3.0">
+</head>
+<body>
+<div id="app">
+  <main id="view" class="view"></main>
+  <nav class="tabbar" id="tabbar" aria-label="主导航">
+    <a href="#/nearby" data-tab="nearby"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-11a6 6 0 1 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><span>附近</span></a>
+    <a href="#/regions" data-tab="regions"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span>地区</span></a>
+    <a href="#/species" data-tab="species"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13c4 0 6-2 8-5 1-1.5 2.5-2 4-2l2-2 1 2h3l-3 2c0 5-3 9-9 9H5l3-3H3z"/><path d="M9 20l2-4"/></svg></span><span>找鸟</span></a>
+    <a href="#/fav" data-tab="fav"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.4 6.3 20.5l1.2-6.4L2.8 9.7l6.4-.8z"/></svg></span><span>收藏</span></a>
+  </nav>
+  <div id="toast" class="toast" role="status" hidden></div>
+</div>
+<script type="module" src="js/app.js?v=0.3.0"></script>
+</body>
+</html>

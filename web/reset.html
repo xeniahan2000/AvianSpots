@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>修复缓存 · 让我观观</title>
+<style>html{color-scheme:light dark}body{font:16px/1.65 system-ui,-apple-system,"Microsoft YaHei",sans-serif;max-width:540px;margin:48px auto;padding:0 20px}button{font:inherit;background:#2783de;color:white;border:0;border-radius:8px;padding:12px 18px;cursor:pointer}a{color:#2783de}p{margin:16px 0}small{opacity:.7}</style></head>
+<body><h1>修复应用缓存</h1><p>如果替换文件后仍显示旧页面，可以在这里清理当前应用的离线缓存并注销旧缓存服务。</p><p><strong>会保留收藏和本机导入记录。</strong>不会清除浏览器的本地数据仓库，也不会操作其他应用路径的缓存。</p><button id="reset">清理缓存并返回</button><p id="status" role="status"></p><p><a href="./#/regions">不清理，直接返回</a></p><small>只需在版本更新异常时使用。如果整个网站无法访问，请先启动本地服务。</small>
+<script type="module">
+import { resetAppCache } from './js/cache-tools.js?v=0.3.0';
+const button=document.getElementById('reset'),status=document.getElementById('status');
+button.addEventListener('click',async()=>{button.disabled=true;status.textContent='正在清理当前应用缓存…';try{await resetAppCache();status.textContent='已清理，正在返回';location.replace('./?cache-repaired='+Date.now()+'#/regions');}catch(e){status.textContent='清理失败：'+e.message+'。可以尝试关闭此站点的所有标签页后重新打开。';button.disabled=false;}});
+</script></body></html>

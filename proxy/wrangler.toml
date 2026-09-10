@@ -1,0 +1,16 @@
+name = "avianspots-proxy"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# 允许调用代理的网页来源。调试阶段用 *，上线后改成你的域名，如
+# ALLOWED_ORIGINS = "https://xeniahan2000.github.io,https://your.domain"
+[vars]
+ALLOWED_ORIGINS = "*"
+
+# eBird API key 不要写在这里，用密钥注入：
+#   wrangler secret put EBIRD_KEY
+
+# 可选：持久缓存（免费额度内够用）。先 wrangler kv namespace create CACHE，再取消下面注释并填入 id。
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

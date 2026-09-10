@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { makeGroupIndex, contextFor, relationship, partitionRecent, placeIdsFor } from '../web/js/groups.js';
+import { parseCSV, safeURL, normalizeDate, isRecent, prepareImport, mergeRecords, backupText, toObservation, possibleDuplicateIds } from '../web/js/imports.js';
+import worker from '../proxy/worker.js';
+const groups = makeGroupIndex(JSON.parse(fs.readFileSync(new URL('../metadata/hotspot-groups.json', import.meta.url))));
+const row = (changes = {}) => ({ source: 'birdreport', recordId: 'SYNTHETIC-TEST-REPORT', ebirdLocId: 'L22179490', locationName: '合成测试地点（非真实观察）', observedAt: '2026-09-09 09:10', speciesName: '斑嘴鸭', scientificName: 'Anas zonorhyncha', count: 10, ...changes });
+const parse = (rows) => prepareImport(JSON.stringify(rows), 'test.json');
+
+test('confirmed parent has exactly five verified children', () => { assert.equal(groups.parents.get('L3968639').children.length, 5); assert.equal(contextFor('L22179490', groups).parentId, 'L3968639'); });
+test('the unrelated name-prefix field is not a group relationship', () => assert.equal(contextFor('L2394169', groups).role, 'unconfirmed'));
+test('parent includes legitimate child records without rewriting location', () => { const p = partitionRecent([{locId:'L22179490', subId:'S123'}, {locId:'L3968639', subId:'S456'}], 'L3968639', groups); assert.equal(p.main.length, 2); assert.equal(p.main[0].locId, 'L22179490'); assert.equal(p.main[0].placeRelation, 'member'); });
+test('unconfirmed locations and missing IDs are preserved separately', () => { const p = partitionRecent([{locId:'L999999'}, {}], 'L3968639', groups); assert.equal(p.main.length, 0); assert.equal(p.unconfirmed.length, 2); });
+test('a child does not inherit observations from sibling hotspots', () => assert.equal(relationship('L22179490', 'L17997069', groups), 'unconfirmed'));
+test('placeIdsFor includes parent and five children for import matching', () => assert.equal(placeIdsFor('L3968639', groups).size, 6));
+test('reject ambiguous membership metadata', () => assert.throws(() => makeGroupIndex({groups:[{parentId:'L1',children:['L2']},{parentId:'L3',children:['L2']}]})));
+test('CSV handles BOM, CRLF, commas, escaped quotes and multiline text', () => { assert.deepEqual(parseCSV('\ufeffa,b\r\n"x,y","say ""hi""\nnext"\r\n'), [{a:'x,y',b:'say "hi"\nnext'}]); });
+test('CSV rejects malformed quote and column count', () => { assert.throws(() => parseCSV('a,b\n"x,b')); assert.throws(() => parseCSV('a,b\nx')); assert.throws(() => parseCSV('a,a\nx,y')); });
+test('CSV Chinese column aliases are recognized', () => { const p=prepareImport('来源,报告编号,地点名称,观察日期,鸟种名称,数量\n个人,TEST,合成地点,2026-09-09,测试鸟,X\n','test.csv'); assert.equal(p.rows[0].source,'personal'); assert.equal(p.rows[0].count,'X'); });
+test('zero and unknown counts are not converted to one', () => { assert.equal(parse([row({count:0})]).rows[0].count,0); assert.equal(parse([row({count:''})]).rows[0].count,'X'); });
+test('negative or fractional counts are rejected', () => { assert.equal(parse([row({count:-1}),row({count:1.1})]).errors.length,2); });
+test('relative, executable and embedded-credential URLs are rejected', () => { for(const u of ['javascript:alert(1)','data:text/html,abc','/relative','https://name:password@example.org/']) assert.throws(() => safeURL(u)); assert.equal(safeURL('https://example.org/report'),'https://example.org/report'); });
+test('invalid calendar dates and times are rejected', () => { for(const d of ['2026-02-30','2026-13-01','2026-09-09 25:00','not a date']) assert.throws(() => normalizeDate(d)); });
+test('offset timestamps convert to Asia/Shanghai', () => assert.equal(normalizeDate('2026-09-09T01:10:00Z'),'2026-09-09 09:10:00'));
+test('recent filter excludes future and old dates', () => { const now=new Date('2026-09-10T04:00:00Z'); assert.equal(isRecent('2026-09-09',30,now),true); assert.equal(isRecent('2026-09-11',30,now),false); assert.equal(isRecent('2026-08-01',30,now),false); });
+test('coordinates require pairs, valid ranges, and known CRS labels', () => { assert.equal(parse([row({latitude:'30'})]).errors.length,1); assert.equal(parse([row({latitude:'91',longitude:'121'})]).errors.length,1); assert.equal(parse([row({coordinateSystem:'Mars'})]).errors.length,1); });
+test('explicit private/sensitive flags reject records', () => { assert.equal(parse([row({isPrivate:true}),row({isSensitive:'是'})]).errors.length,2); });
+test('repeat rows within a file collapse with a visible warning', () => { const p=parse([row(),row({count:11})]); assert.equal(p.rows.length,1); assert.equal(p.rows[0].count,11); assert.equal(p.repeated,1); assert.equal(p.warnings.length,1); });
+test('reimport is idempotent and changed count updates in place', () => { const first=mergeRecords([],parse([row()]).rows); const second=mergeRecords(first.rows,parse([row()]).rows); assert.equal(second.rows.length,1); assert.equal(second.stats.unchanged,1); const changed=mergeRecords(second.rows,parse([row({count:12})]).rows); assert.equal(changed.stats.updated,1); assert.equal(changed.rows[0].count,12); });
+test('two sources never automatically merge', () => assert.equal(mergeRecords([],parse([row(),row({source:'personal'})]).rows).rows.length,2));
+test('backup round-trip preserves count, location and raw taxonomy', () => { const records=mergeRecords([],parse([row({taxonomyVersion:'Synthetic taxonomy v1'})]).rows).rows; const restored=prepareImport(backupText(records),'backup.json'); assert.equal(restored.errors.length,0); assert.equal(restored.rows[0].taxonomyVersion,'Synthetic taxonomy v1'); assert.equal(restored.rows[0].ebirdLocId,'L22179490'); });
+test('Chinese names alone are not enough to map a taxonomy', () => { const t={list:[{cat:'species',code:'abc',zh:'测试鸟',sci:'Testus example'}],byCode:new Map()}; const o=toObservation(parse([row({scientificName:'',speciesName:'测试鸟'})]).rows[0],t); assert.equal(o.mapping,'unmatched'); assert.equal(o.speciesCode,''); });
+test('unique scientific name match keeps original name and marks tentative mapping', () => { const t={list:[{cat:'species',code:'spbduc',sci:'Anas zonorhyncha'}],byCode:new Map()}; const o=toObservation(parse([row()]).rows[0],t); assert.equal(o.mapping,'scientific-name'); assert.equal(o.comName,'斑嘴鸭'); });
+test('cross-source possible duplicates are only hints, not deletion', () => { const list=[{id:'a',source:'ebird',locId:'L1',speciesCode:'abc',obsDt:'2026-09-09 09:10',howMany:10},{id:'b',source:'birdreport',locId:'L1',speciesCode:'abc',obsDt:'2026-09-09 09:10',howMany:10}]; assert.equal(possibleDuplicateIds(list).size,2); assert.equal(list.length,2); assert.equal(possibleDuplicateIds(list.map((r)=>({...r,obsDt:'2026-09-09'}))).size,0); });
+test('bundled group names and IDs all exist in the original snapshot', () => { const hs=JSON.parse(fs.readFileSync(new URL('../web/data/hotspots.json',import.meta.url))); for(const group of groups.parents.values()) for(const id of [group.parentId,...group.children]) assert.ok(hs[id],id); assert.equal(hs.L22179490[1],'观海卫海滨'); });
+test('shipped templates are empty, never demo observations', () => { assert.equal(prepareImport(fs.readFileSync(new URL('../web/templates/records-template.csv',import.meta.url),'utf8'),'template.csv').rows.length,0); assert.equal(prepareImport(fs.readFileSync(new URL('../web/templates/records-template.json',import.meta.url),'utf8'),'template.json').rows.length,0); });
+test('worker passes parent response through and never retries a region query', async () => {
+  const original=globalThis.fetch, calls=[]; globalThis.fetch=async (url) => { calls.push(String(url)); return new Response(JSON.stringify([{locId:'L22179490',subId:'S900000001',speciesCode:'spbduc'}])); };
+  try { const res=await worker.fetch(new Request('https://proxy.example/recent/L3968639?back=30&region=CN-33'),{EBIRD_KEY:'SYNTHETIC_TEST_KEY'}); assert.equal(res.status,200); assert.equal((await res.json())[0].locId,'L22179490'); assert.equal(calls.length,1); assert.match(calls[0],/\/data\/obs\/L3968639\/recent\?/); assert.ok(!calls[0].includes('/CN-33/')); } finally { globalThis.fetch=original; }
+});
+test('worker health exposes only key presence, no token', async () => { const res=await worker.fetch(new Request('https://proxy.example/health'),{}); assert.deepEqual(await res.json(),{ok:true,version:'0.3.0',keyConfigured:false}); });
+test('worker rejects invalid back without accessing upstream', async () => { const res=await worker.fetch(new Request('https://proxy.example/recent/L123?back=99'),{EBIRD_KEY:'TEST'}); assert.equal(res.status,400); });

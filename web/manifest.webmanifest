@@ -1,0 +1,17 @@
+{
+  "name": "让我观观 · 各地鸟点与鸟种",
+  "short_name": "让我观观",
+  "description": "按地区查看鸟点与鸟种，数据来自 eBird",
+  "lang": "zh-CN",
+  "start_url": "./#/regions",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2783DE",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

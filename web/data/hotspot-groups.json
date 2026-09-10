@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-10",
+  "coverageNote": "仅收录已明确核对的关系；未收录不代表该点没有分组。不会根据距离或名字中的双连字符推断。",
+  "groups": [
+    {
+      "parentId": "L3968639",
+      "name": "杭州湾湿地--三北浅滩",
+      "children": [
+        "L12202263",
+        "L22179490",
+        "L55855409",
+        "L17997069",
+        "L4285153"
+      ],
+      "sourceUrl": "https://ebird.org/hotspot/L3968639",
+      "membershipSource": "用户提供的 eBird 热点组截图，2026-09-10",
+      "locationIdSource": "用户提供的 eBird API 地点快照，2026-09-09；中英文名称逐项对应",
+      "note": "父热点加 5 个子热点，共 6 个地点；列表与观测须保留实际地点编号。"
+    }
+  ]
+}
